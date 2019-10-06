@@ -1,0 +1,56 @@
+---
+- name: copy simulator script
+  copy:
+    src: simulator.py
+    dest: "{{ ansible_env.HOME }}/simulator.py"
+    mode: u=rwx,g=rx,o=rx
+
+- find:
+    paths: "{{ ansible_env.HOME }}"
+    patterns: "*.txt"
+  register: find_results
+
+- file:
+    path: "{{ item['path'] }}"
+    state: absent
+  with_items: "{{ find_results['files'] }}"
+
+- command: "{{ item }}"
+  args:
+    chdir: "{{ ansible_env.HOME }}"
+  with_items:
+    - "python3 simulator.py -c 5"
+    - "mv log.txt count5.txt"
+  register: count5_result
+  async: 60
+  poll: 5
+
+- name: fetch count5
+  fetch:
+    src: "{{ ansible_env.HOME }}/count5.txt"
+    dest: logs
+  when: count5_result is succeeded
+
+- file:
+    path: "{{ ansible_env.HOME }}/count5.txt"
+    state: absent
+
+- command: "{{ item }}"
+  args:
+    chdir: "{{ ansible_env.HOME }}"
+  with_items:
+    - "python3 simulator.py -c 6"
+    - "mv log.txt count6.txt"
+  register: count6_result
+  async: 60
+  poll: 5
+
+- name: fetch count6
+  fetch:
+    src: "{{ ansible_env.HOME }}/count6.txt"
+    dest: logs
+  when: count6_result is succeeded
+
+- file:
+    path: "{{ ansible_env.HOME }}/count6.txt"
+    state: absent
