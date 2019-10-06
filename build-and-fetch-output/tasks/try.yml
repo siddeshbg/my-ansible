@@ -1,0 +1,26 @@
+---
+- name: remove old logs
+  shell: rm *.txt
+  args:
+    chdir: "{{ ansible_env.HOME }}"
+  ignore_errors: yes
+
+- name: run {{count}} with {{ msg }}
+  command: "{{ item }}"
+  args:
+    chdir: "{{ ansible_env.HOME }}"
+  with_items:
+    - "python3 simulator.py -c {{ count }}"
+  register: result
+  async: 60
+  poll: 5
+
+- name: find log file
+  shell: "mv *.txt {{count}}_log.txt"
+  args:
+    chdir: "{{ ansible_env.HOME }}"
+
+- name: fetch {{count}}
+  fetch:
+    src: "{{ ansible_env.HOME }}/{{count}}_log.txt"
+    dest: logs
